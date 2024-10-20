@@ -367,3 +367,46 @@ exports.deleteUser = async (req, res, next) => {
     });
   }
 };
+
+exports.updateGuardian = async (req, res, next) => {
+  try {
+    const updateFields = { ...req.body }; // Extracting fields from the request body
+
+    // Check if there are guardians to append
+    if (updateFields.guardian) {
+      await User.findByIdAndUpdate(
+        req.params.userId,
+        { $push: { guardian: { $each: updateFields.guardian } } }, // Appending the new guardians
+        { new: true } // Return the updated document
+      );
+      // Remove guardian field from updateFields so it's not processed again
+      delete updateFields.guardian;
+    }
+
+    // Update other fields if present
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.userId,
+      updateFields, // Update other fields provided in the request
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        status: "fail",
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "User updated successfully",
+      data: updatedUser,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: err.message,
+    });
+  }
+};
+
