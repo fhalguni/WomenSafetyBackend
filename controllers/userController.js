@@ -65,10 +65,10 @@ const sendOTp = async (phoneNumber, otp) => {
 
 exports.signUp = async (req, res, next) => {
   try {
-    const { phone_number } = req.body;
+    const { phoneNumber } = req.body;
 
     // Check if the user already exists
-    const existingAccount = await User.findOne({ phone_number });
+    const existingAccount = await User.findOne({ phoneNumber });
 
     if (existingAccount && !existingAccount.isPhoneVerified) {
       return res.status(400).json({
@@ -88,7 +88,7 @@ exports.signUp = async (req, res, next) => {
     });
 
     // Send OTP
-    const otpSent = await sendOTp(phone_number, otp);
+    const otpSent = await sendOTp(phoneNumber, otp);
 
     if (!otpSent) {
       // If OTP failed to send, respond and stop further processing
@@ -125,9 +125,9 @@ exports.signUp = async (req, res, next) => {
 
 exports.verifyOtp = async (req, res, next) => {
   try {
-    const { phone_number, otp } = req.body;
+    const { phoneNumber, otp } = req.body;
 
-    const user = await User.findOne({ phone_number });
+    const user = await User.findOne({ phoneNumber });
 
     if (user.otp === otp) {
       user.isPhoneVerified = true;
@@ -154,8 +154,8 @@ exports.verifyOtp = async (req, res, next) => {
 
 exports.resendotp = async (req, res, next) => {
   try {
-    const { phone_number } = req.params;
-    const user = await User.findOne({ phone_number });
+    const { phoneNumber } = req.params;
+    const user = await User.findOne({ phoneNumber });
 
     if (user.isPhoneVerified) {
       return res.status(500).json({
@@ -174,7 +174,7 @@ exports.resendotp = async (req, res, next) => {
     });
 
     // Send OTP
-    const otpSent = await sendOTp(phone_number, otp);
+    const otpSent = await sendOTp(phoneNumber, otp);
 
     if (otpSent) {
       user.otp = otp;
@@ -200,7 +200,7 @@ exports.resendotp = async (req, res, next) => {
 
 exports.logIn = async (req, res, next) => {
   try {
-    const { phone_number, password } = req.body;
+    const { phoneNumber, password } = req.body;
 
     if (!phone_number || !password) {
       return res.status(400).json({
@@ -209,7 +209,7 @@ exports.logIn = async (req, res, next) => {
       });
     }
 
-    const user = await User.findOne({ phone_number });
+    const user = await User.findOne({ phoneNumber });
 
     if (!user) {
       return res.status(404).json({
