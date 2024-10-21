@@ -202,7 +202,7 @@ exports.logIn = async (req, res, next) => {
   try {
     const { phoneNumber, password } = req.body;
 
-    if (!phone_number || !password) {
+    if (!phoneNumber || !password) {
       return res.status(400).json({
         status: "error",
         message: "Enter email or password",
