@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  phone_number: {
+  phoneNumber: {
     type: String,
     required: true,
   },
@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
       name: {
         type: String,
       },
-      phone_number: {
+      phoneNumber: {
         type: String,
       },
     },
