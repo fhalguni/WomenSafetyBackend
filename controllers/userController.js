@@ -65,10 +65,10 @@ const sendOTp = async (phoneNumber, otp) => {
 
 exports.signUp = async (req, res, next) => {
   try {
-    const { phoneNumber } = req.body;
+    const { phone_number } = req.body;
 
     // Check if the user already exists
-    const existingAccount = await User.findOne({ phoneNumber });
+    const existingAccount = await User.findOne({ phone_number });
 
     if (existingAccount && !existingAccount.isPhoneVerified) {
       return res.status(400).json({
@@ -88,7 +88,7 @@ exports.signUp = async (req, res, next) => {
     });
 
     // Send OTP
-    const otpSent = await sendOTp(phoneNumber, otp);
+    const otpSent = await sendOTp(phone_number, otp);
 
     if (!otpSent) {
       // If OTP failed to send, respond and stop further processing
@@ -125,9 +125,9 @@ exports.signUp = async (req, res, next) => {
 
 exports.verifyOtp = async (req, res, next) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { phone_number, otp } = req.body;
 
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ phone_number });
 
     if (user.otp === otp) {
       user.isPhoneVerified = true;
@@ -154,8 +154,8 @@ exports.verifyOtp = async (req, res, next) => {
 
 exports.resendotp = async (req, res, next) => {
   try {
-    const { phoneNumber } = req.params;
-    const user = await User.findOne({ phoneNumber });
+    const { phone_number } = req.params;
+    const user = await User.findOne({ phone_number });
 
     if (user.isPhoneVerified) {
       return res.status(500).json({
@@ -174,7 +174,7 @@ exports.resendotp = async (req, res, next) => {
     });
 
     // Send OTP
-    const otpSent = await sendOTp(phoneNumber, otp);
+    const otpSent = await sendOTp(phone_number, otp);
 
     if (otpSent) {
       user.otp = otp;
@@ -200,16 +200,16 @@ exports.resendotp = async (req, res, next) => {
 
 exports.logIn = async (req, res, next) => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { phone_number, password } = req.body;
 
-    if (!phoneNumber || !password) {
+    if (!phone_number || !password) {
       return res.status(400).json({
         status: "error",
         message: "Enter email or password",
       });
     }
 
-    const user = await User.findOne({ phoneNumber });
+    const user = await User.findOne({ phone_number });
 
     if (!user) {
       return res.status(404).json({
@@ -367,28 +367,21 @@ exports.deleteUser = async (req, res, next) => {
     });
   }
 };
-
 exports.updateGuardian = async (req, res, next) => {
   try {
-    const updateFields = { ...req.body }; // Extracting fields from the request body
-
-    // Check if there are guardians to append
-    if (updateFields.guardian) {
-      await User.findByIdAndUpdate(
-        req.params.userId,
-        { $push: { guardian: { $each: updateFields.guardian } } }, // Appending the new guardians
-        { new: true } // Return the updated document
-      );
-      // Remove guardian field from updateFields so it's not processed again
-      delete updateFields.guardian;
-    }
-
-    // Update other fields if present
+    const { name, phoneNumber, email, guardian } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
-      updateFields, // Update other fields provided in the request
+      {
+        name: name,
+        email: email,
+        phoneNumber: phoneNumber,
+        $addToSet: { guardian: { $each: guardian } },
+      },
       { new: true }
     );
+
+    console.log(guardian);
 
     if (!updatedUser) {
       return res.status(404).json({
@@ -396,7 +389,6 @@ exports.updateGuardian = async (req, res, next) => {
         message: "User not found",
       });
     }
-
     res.status(200).json({
       status: "success",
       message: "User updated successfully",
@@ -410,3 +402,56 @@ exports.updateGuardian = async (req, res, next) => {
   }
 };
 
+exports.deleteGuardian = async (req, res, next) => {
+  try {
+    const { userId } = req.params; // Extract userId from the URL
+    const { guardianId } = req.body; // Extract guardianId from the request body
+
+    // Validate input
+    if (!userId || !guardianId) {
+      return res.status(400).json({
+        status: "error",
+        message: "User ID and Guardian ID are required",
+      });
+    }
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    // Check if the guardian exists in the user's guardian list
+    const guardianExists = user.guardian.some(
+      (guardian) => guardian._id.toString() === guardianId
+    );
+    if (!guardianExists) {
+      return res.status(404).json({
+        status: "error",
+        message: "Guardian not found",
+      });
+    }
+
+    // Remove the guardian from the user's guardian array
+    user.guardian = user.guardian.filter(
+      (guardian) => guardian._id.toString() !== guardianId
+    );
+
+    // Save the updated user document
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Guardian deleted successfully",
+      data: user, // Optionally return updated user data
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: "Server error: " + err.message,
+    });
+  }
+};
