@@ -369,19 +369,16 @@ exports.deleteUser = async (req, res, next) => {
 };
 exports.updateGuardian = async (req, res, next) => {
   try {
-    const { name, phoneNumber, email, guardian } = req.body;
+    const {  guardian } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
       {
-        name: name,
-        email: email,
-        phoneNumber: phoneNumber,
         $addToSet: { guardian: { $each: guardian } },
       },
       { new: true }
     );
 
-    console.log(guardian);
+    console.log({ ...guardian });
 
     if (!updatedUser) {
       return res.status(404).json({
